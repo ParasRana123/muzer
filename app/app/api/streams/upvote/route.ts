@@ -25,7 +25,17 @@ export async function POST(req: NextRequest) {
 
     try {
         const data = UpvoteSchema.parse(await req.json());
-    } catch () {
-
+        await prismaClient.upvote.create({
+            data: {
+                userId: user.id,
+                streamId: data.streamId
+            }
+        });
+    } catch (e) {
+        return NextResponse.json({
+            message: "Error while upvoting"
+        } , {
+            status: 403
+        })
     }
 }
