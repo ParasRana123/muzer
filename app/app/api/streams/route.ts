@@ -27,16 +27,20 @@ export async function POST(req: NextRequest) {
 
         const extractedId = data.url.split("?v=")[1];
 
-        const res = youtubesearchapi.GetVideoDetails(extractedId)
+        const res = await youtubesearchapi.GetVideoDetails(extractedId)
         console.log(res.title);
-        console.log(stringify(res.thumbnail.thumbnails));
+        const thumbnails = res.thumbnail.thumbnails;
+        thumbnails.sort((a: {width: number} , b: {width: number}) => a.width < b.width ? -1 : 1);
 
         const stream = await prismaClient.stream.create({
             data: {
                 userId: data.creatorId,
                 url: data.url,
                 extractedId,
-                type: "Youtube"
+                type: "Youtube",
+                title: res.title,
+                smallImg: (thumbnails.length > 1 ? thumbnails[thumbnails.length - 2].url : thumbnails[thumbnails.length - 1].url) ?? "",
+                bigImg: thumbnails[thumbnails.length - 1].url ?? ""
             }
         })
 
@@ -44,11 +48,12 @@ export async function POST(req: NextRequest) {
             message: "Added stream",
             id: stream.id
         })
-    } catch(e) {
+    } catch(e: any) {
         return NextResponse.json({
-            message: "Error while adding a stream"
+            message: "Error while adding a stream",
+            error: e.message || e.toString()
         } , {
-            status: 411
+            status: 500
         })
     }
 }
